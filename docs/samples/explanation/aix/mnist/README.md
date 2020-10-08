@@ -1,6 +1,8 @@
-# Using AIX to get explanations for MNIST classifications
+# Using AI Explainability 360 (AIX360)  to get explanations for MNIST classifications
 
-This is an example of how to explain model predictions using [AI Explainability 360 (AIX360)](https://ai-explainability-360.org/) on KFServing. We will be using mnist dataset for handwritten digits for this model and explain how the model decides the predicted results.
+This is an example of how to explain model predictions using [AI Explainability 360 (AIX360)](https://ai-explainability-360.org/) on KFServing. The AI Explainability 360 toolkit, an LF AI Foundation incubation project, is an open-source library that supports the interpretability and explainability of datasets and machine learning models. The AI Explainability 360 Python package includes a comprehensive set of algorithms that cover different dimensions of explanations along with proxy explainability metrics.
+
+We will be using mnist dataset for handwritten digits for this model and explain how the model calculates the predicted results. 
 
 To deploy the inferenceservice with v1beta1 API
 
