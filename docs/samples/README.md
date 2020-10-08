@@ -49,7 +49,7 @@ scale differently from the predictor if your transformer is CPU bound while pred
 ### Deploy InferenceService with Explainer
 Model explainability answers the question: "Why did my model make this prediction" for a given instance. KFServing 
 integrates with [Alibi Explainer](https://github.com/SeldonIO/alibi) which implements a black-box algorithm by generating a lot of similar looking intances 
-for a given instance and send out to the model server to produce an explanation.
+for a given instance and send out to the model server to produce an explanation. Additionally, KFServing provides integration with The [AI Explainability 360](), an LF AI Foundation open-source library that supports the interpretability and explainability of datasets and machine learning models. The AI Explainability 360 Python package includes a comprehensive set of algorithms that cover different dimensions of explanations along with proxy explainability metrics.
 
 
 | Features  | Examples |
@@ -57,6 +57,7 @@ for a given instance and send out to the model server to produce an explanation.
 | Deploy Alibi Image Explainer| [Imagenet Explainer](./explanation/alibi/imagenet)  |
 | Deploy Alibi Income Explainer| [Income Explainer](./explanation/alibi/income)  |
 | Deploy Alibi Text Explainer| [Alibi Text Explainer](./explanation/alibi/moviesentiment) |
+| Deploy AI Explainability 360 Mnist Explainer| [AIX360 Mnist Explainer](./explanation/aix/mnist) |
 
 ### Deploy InferenceService with Outlier/Drift Detector
 In order to trust and reliably act on model predictions, it is crucial to monitor the distribution of the incoming
