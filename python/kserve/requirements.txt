@@ -14,9 +14,11 @@ azure-storage-file-share==12.7.0
 azure-identity>=1.8.0
 cloudevents>=1.6.2
 avro>=1.11.0
-boto3~=1.21
+# AIP: remove boto dependencies as we are not using them and they will slow down dependency resolution
+# boto3~=1.21
 psutil>=5.9.0
-ray[serve]==2.0.0
+# AIP: relax ray for vllm
+ray[serve]>=2.0.0
 grpcio>=1.34.0
 tritonclient==2.18.0
 protobuf>=3.19.0
