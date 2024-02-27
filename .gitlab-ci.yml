@@ -1,6 +1,6 @@
 include:
   - project: 'analytics/artificial-intelligence/ai-platform/aip-infrastructure/ci-templates/ci-cd-template'
-    ref: &include_ref 'v3'
+    ref: &include_ref 'v3' # TODO use v4?
     file: 'environments/devex.yml'
   - project: 'analytics/artificial-intelligence/ai-platform/aip-infrastructure/ci-templates/ci-cd-template'
     ref: *include_ref
@@ -9,7 +9,8 @@ include:
 variables:
   PY_LIBRARY_NAME: "zillow-kserve"
   MAJOR_VERSION: "0"
-  MINOR_VERSION: "7"
+  MINOR_VERSION: "10"
+  RELEASE_BRANCH: "zillow/release-0.10.2"
   KSERVE_VERSION_PATH: "python/kserve/setup.py"
   PUBLISH: "true"
 
@@ -18,10 +19,11 @@ stages:
 
 .version: &version |
   # Extract the open source KServe version as the basis for our forked library version.
-  KSERVE_VERSION=$(cat $KSERVE_VERSION_PATH | sed -nr "s/^ *version=['\"]([^'\"]*)['\"],/\1/p")
+  KSERVE_VERSION=$(cat python/VERSION)
 
   PY_LIBRARY_VERSION="${MAJOR_VERSION}.${MINOR_VERSION}.${CI_PIPELINE_IID}"
-  if [ "${CI_COMMIT_BRANCH}" != "${CI_DEFAULT_BRANCH}" ]; then
+  if [ "${CI_COMMIT_BRANCH}" != "${RELEASE_BRANCH}" ]; then
+    # TODO Use . instead of . anyways ?
     PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}-dev.${CI_PIPELINE_IID}"
     # Ensure the image tag is compliant with PEP-440,
     IMAGE_TAG="${PY_LIBRARY_VERSION}.dev${CI_PIPELINE_IID}"
