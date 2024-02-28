@@ -20,10 +20,10 @@ stages:
 .version: &version |
   # Extract the open source KServe version as the basis for our forked library version.
   KSERVE_VERSION=$(cat python/VERSION)
-  echo 'Kserve version is $KSERVE_VERSION'
+  echo Kserve version is $KSERVE_VERSION
 
   PY_LIBRARY_VERSION="${MAJOR_VERSION}.${MINOR_VERSION}.${CI_PIPELINE_IID}"
-  echo 'Base PY_LIBRARY_VERSION is $PY_LIBRARY_VERSION'
+  echo Base PY_LIBRARY_VERSION is $PY_LIBRARY_VERSION
   if [ "${CI_COMMIT_BRANCH}" != "${RELEASE_BRANCH}" ]; then
     # TODO Use . instead of . anyways ?
     PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}-dev.${CI_PIPELINE_IID}"
@@ -32,11 +32,11 @@ stages:
   else
     IMAGE_TAG="${PY_LIBRARY_VERSION}"
   fi
-  echo 'IMAGE_TAG is $IMAGE_TAG'
+  echo IMAGE_TAG is $IMAGE_TAG
   # Only apply the KServe version to the python library as Docker versions do not have the concept of
   # build metadata and the "+" character causes errors.
   PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}+${KSERVE_VERSION}"
-  echo 'Final PY_LIBRARY_VERSION is $PY_LIBRARY_VERSION'
+  echo Final PY_LIBRARY_VERSION is $PY_LIBRARY_VERSION
 
 build:publish:
   extends: .aip_python_debian_image
