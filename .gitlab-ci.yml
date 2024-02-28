@@ -25,8 +25,7 @@ stages:
   PY_LIBRARY_VERSION="${MAJOR_VERSION}.${MINOR_VERSION}.${CI_PIPELINE_IID}"
   echo Base PY_LIBRARY_VERSION is $PY_LIBRARY_VERSION
   if [ "${CI_COMMIT_BRANCH}" != "${RELEASE_BRANCH}" ]; then
-    # TODO Use . instead of . anyways ?
-    PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}-dev.${CI_PIPELINE_IID}"
+    PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}.dev${CI_PIPELINE_IID}"
     # Ensure the image tag is compliant with PEP-440,
     IMAGE_TAG="${PY_LIBRARY_VERSION}.dev${CI_PIPELINE_IID}"
   else
