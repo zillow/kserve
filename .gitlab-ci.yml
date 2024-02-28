@@ -44,7 +44,7 @@ build:publish:
   - *version
   # Now write back the zillow-kserve version back to the original location we found the original so
   # python package managers can reference it as they need the version stored internally.
-  - sed -i "s/version=version/version=${PY_LIBRARY_VERSION}/" $KSERVE_VERSION_PATH
+  - sed -i "s/version=version/version=\'${PY_LIBRARY_VERSION}\'/" $KSERVE_VERSION_PATH
   - cd python/kserve
   - python setup.py sdist
   # Set up the configuration for Artifactory to publish the python package internally.
