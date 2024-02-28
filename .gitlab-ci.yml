@@ -20,22 +20,16 @@ stages:
 .version: &version |
   # Extract the open source KServe version as the basis for our forked library version.
   KSERVE_VERSION=$(cat python/VERSION)
-  echo Kserve version is $KSERVE_VERSION
 
   PY_LIBRARY_VERSION="${MAJOR_VERSION}.${MINOR_VERSION}.${CI_PIPELINE_IID}"
-  echo Base PY_LIBRARY_VERSION is $PY_LIBRARY_VERSION
   if [ "${CI_COMMIT_BRANCH}" != "${RELEASE_BRANCH}" ]; then
     PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}.dev${CI_PIPELINE_IID}"
-    # Ensure the image tag is compliant with PEP-440,
-    IMAGE_TAG="${PY_LIBRARY_VERSION}.dev${CI_PIPELINE_IID}"
-  else
-    IMAGE_TAG="${PY_LIBRARY_VERSION}"
   fi
-  echo IMAGE_TAG is $IMAGE_TAG
-  # Only apply the KServe version to the python library as Docker versions do not have the concept of
-  # build metadata and the "+" character causes errors.
+  IMAGE_TAG="${PY_LIBRARY_VERSION}"
+  
+  # Suffix the KServe version to the python library version only, because Docker versions 
+  # do not have the concept of build metadata and the "+" character causes errors.
   PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}+${KSERVE_VERSION}"
-  echo Final PY_LIBRARY_VERSION is $PY_LIBRARY_VERSION
 
 build:publish:
   extends: .aip_python_debian_image
@@ -44,7 +38,8 @@ build:publish:
   - *version
   # Now write back the zillow-kserve version back to the original location we found the original so
   # python package managers can reference it as they need the version stored internally.
-  - sed -i "s/version=version/version=\'${PY_LIBRARY_VERSION}\'/" $KSERVE_VERSION_PATH
+  # - sed -i "s/version=version/version=\'${PY_LIBRARY_VERSION}\'/" $KSERVE_VERSION_PATH -- TODO remove?
+  - echo "${PY_LIBRARY_VERSION}" > python/VERSION
   - cd python/kserve
   - python setup.py sdist
   # Set up the configuration for Artifactory to publish the python package internally.
