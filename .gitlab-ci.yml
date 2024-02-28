@@ -1,9 +1,9 @@
 include:
   - project: 'analytics/artificial-intelligence/ai-platform/aip-infrastructure/ci-templates/ci-cd-template'
-    ref: &include_ref 'v3' # TODO use v4?
+    ref: &include_ref 'v3'
     file: 'environments/devex.yml'
   - project: 'analytics/artificial-intelligence/ai-platform/aip-infrastructure/ci-templates/ci-cd-template'
-    ref: *include_ref
+    ref: *include_ref # TODO Use V4?
     file: '/blocks/python.yml'
 
 variables:
@@ -45,7 +45,7 @@ build:publish:
   - *version
   # Now write back the zillow-kserve version back to the original location we found the original so
   # python package managers can reference it as they need the version stored internally.
-  - sed -i "s/\(version=['\"]\)[^'\"]*\(['\"]\)/\1${PY_LIBRARY_VERSION}\2/" $KSERVE_VERSION_PATH
+  - sed -i "s/version=version/version=\${PY_LIBRARY_VERSION}/" $KSERVE_VERSION_PATH
   - cd python/kserve
   - python setup.py sdist
   # Set up the configuration for Artifactory to publish the python package internally.
