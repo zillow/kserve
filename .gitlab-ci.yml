@@ -25,7 +25,6 @@ stages:
   if [ "${CI_COMMIT_BRANCH}" != "${RELEASE_BRANCH}" ]; then
     PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}.dev${CI_PIPELINE_IID}"
   fi
-  IMAGE_TAG="${PY_LIBRARY_VERSION}"
   
   # Suffix the KServe version to the python library version only, because Docker versions 
   # do not have the concept of build metadata and the "+" character causes errors.
