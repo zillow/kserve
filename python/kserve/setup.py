@@ -31,7 +31,7 @@ with open(pathlib.Path(__file__).parent.parent / 'VERSION') as version_file:
     version = version_file.read().strip()
 
 setuptools.setup(
-    name='kserve',
+    name='zillow-kserve',
     version=version,
     author="The KServe Authors",
     author_email='ellisbigelow@google.com, hejinchi@cn.ibm.com, dsun20@bloomberg.net',

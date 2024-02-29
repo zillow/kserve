@@ -1,0 +1,57 @@
+include:
+  - project: 'analytics/artificial-intelligence/ai-platform/aip-infrastructure/ci-templates/ci-cd-template'
+    ref: &include_ref 'v4'
+    file: 'environments/devex.yml'
+  - project: 'analytics/artificial-intelligence/ai-platform/aip-infrastructure/ci-templates/ci-cd-template'
+    ref: *include_ref
+    file: '/blocks/python.yml'
+
+variables:
+  PY_LIBRARY_NAME: "zillow-kserve"
+  MAJOR_VERSION: "0"
+  MINOR_VERSION: "10"
+  RELEASE_BRANCH: "zillow/release-0.10.2"
+  KSERVE_VERSION_PATH: "python/kserve/setup.py"
+  PUBLISH: "true"
+
+stages:
+  - build
+
+.version: &version |
+  # Extract the open source KServe version as the basis for our forked library version.
+  KSERVE_VERSION=$(cat python/VERSION)
+
+  PY_LIBRARY_VERSION="${MAJOR_VERSION}.${MINOR_VERSION}.${CI_PIPELINE_IID}"
+  if [ "${CI_COMMIT_BRANCH}" != "${RELEASE_BRANCH}" ]; then
+    PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}.dev${CI_PIPELINE_IID}"
+  fi
+  
+  # Suffix the KServe version to the python library version only, because Docker versions 
+  # do not have the concept of build metadata and the "+" character causes errors.
+  PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}+${KSERVE_VERSION}"
+
+build:publish:
+  extends: .aip_python_debian_image
+  stage: build
+  script:
+  - *version
+  # Now write back the zillow-kserve version back to the original location we got it from,
+  # so python package managers can reference it as they need the version stored internally.
+  - echo "${PY_LIBRARY_VERSION}" > python/VERSION
+  - cd python/kserve
+  - python setup.py sdist
+  # Set up the configuration for Artifactory to publish the python package internally.
+  - |
+    cat >~/.pypirc <<EOL
+    [distutils]
+    index-servers = local
+    [local]
+    repository: ${ANALYTICS_PYPI_REPOSITORY}
+    username: ${PYPI_USERNAME}
+    password: ${PYPI_PASSWORD}
+    EOL
+  - python setup.py sdist upload --repository "${ANALYTICS_PYPI_REPOSITORY}"
+  rules:
+    - if: '$PUBLISH == "true"'
+    # only trigger on zillow/ branches
+    - if: '$CI_COMMIT_BRANCH =~ /^zillow.*/'

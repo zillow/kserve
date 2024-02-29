@@ -32,9 +32,16 @@ from azure.storage.blob import BlobServiceClient
 from azure.storage.blob._list_blobs_helper import BlobPrefix
 from azure.storage.fileshare import ShareServiceClient
 
-from botocore.client import Config
-from botocore import UNSIGNED
-import boto3
+# AIP: we'll never use them
+try:
+    from botocore.client import Config
+    from botocore import UNSIGNED
+    import boto3
+except ImportError:
+    Config = None
+    UNSIGNED = None
+    boto3 = None
+
 from google.auth import exceptions
 from google.cloud import storage
 
