@@ -1,3 +1,4 @@
+# AIP file to enable building and publishing in the GitLab mirror of this GitHub fork.
 include:
   - project: 'analytics/artificial-intelligence/ai-platform/aip-infrastructure/ci-templates/ci-cd-template'
     ref: &include_ref 'v4'
@@ -11,7 +12,6 @@ variables:
   MAJOR_VERSION: "0"
   MINOR_VERSION: "10"
   RELEASE_BRANCH: "zillow/release-0.10.2"
-  KSERVE_VERSION_PATH: "python/kserve/setup.py"
   PUBLISH: "true"
 
 stages:
@@ -35,9 +35,11 @@ build:publish:
   stage: build
   script:
   - *version
-  # Now write back the zillow-kserve version back to the original location we got it from,
-  # so python package managers can reference it as they need the version stored internally.
-  - echo "${PY_LIBRARY_VERSION}" > python/VERSION
+  # Write the zillow-kserve version to python/kserve/VERSION.
+  # Only files in the python/kserve directory are included in the PyPI package,
+  # so the VERSION file must be in this directory.
+  # python/kserve/setup.py is updated to read the version from python/kserve/VERSION.
+  - echo "${PY_LIBRARY_VERSION}" > python/kserve/VERSION
   - cd python/kserve
   - python setup.py sdist
   # Set up the configuration for Artifactory to publish the python package internally.
