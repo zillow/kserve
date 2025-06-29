@@ -73,7 +73,10 @@ class RESTServer:
 
         return FastAPI(
             title="KServe ModelServer",
-            version=pkg_resources.get_distribution("kserve").version,
+            # AIP: Get the 'zillow-kserve' distribution instead of 'kserve'.
+            # version=pkg_resources.get_distribution("kserve").version,
+            version=pkg_resources.get_distribution("zillow-kserve").version,
+            # AIP change ends
             docs_url="/docs" if self.enable_docs_url else None,
             redoc_url=None,
             default_response_class=ORJSONResponse,
