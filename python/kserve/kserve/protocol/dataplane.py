@@ -44,7 +44,10 @@ class DataPlane:
 
         # Dynamically fetching version of the installed 'kserve' distribution. The assumption is
         # that 'kserve' will already be installed by the time this class is instantiated.
-        self._server_version = pkg_resources.get_distribution("kserve").version
+        # AIP: Get the 'zillow-kserve' distribution instead of 'kserve'.
+        # self._server_version = pkg_resources.get_distribution("kserve").version
+        self._server_version = pkg_resources.get_distribution("zillow-kserve").version
+        # AIP change ends
 
     @property
     def model_registry(self):
