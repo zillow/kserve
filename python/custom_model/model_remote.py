@@ -19,11 +19,13 @@ import torch
 from PIL import Image
 import base64
 import io
-from ray import serve
+# AIP: remove ray
+# from ray import serve
 
 
 # the model handle name should match the model endpoint name
-@serve.deployment(name="custom-model", num_replicas=2)
+# AIP: remove ray
+# @serve.deployment(name="custom-model", num_replicas=2)
 class AlexNetModel(Model):
     def __init__(self):
         self.name = "custom-model"

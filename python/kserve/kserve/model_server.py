@@ -20,10 +20,11 @@ import signal
 import socket
 from distutils.util import strtobool
 from multiprocessing import Process
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
 
-from ray import serve as rayserve
-from ray.serve.api import Deployment, RayServeHandle
+# AIP: remove ray
+# from ray import serve as rayserve
+# from ray.serve.api import Deployment, RayServeHandle
 
 from .logging import KSERVE_LOG_CONFIG, logger
 from .model import Model
@@ -120,7 +121,8 @@ class ModelServer:
 
         self.access_log_format = access_log_format
 
-    def start(self, models: Union[List[Model], Dict[str, Deployment]]) -> None:
+    # def start(self, models: Union[List[Model], Dict[str, Deployment]]) -> None:  # AIP: remove ray.
+    def start(self, models: Union[List[Model], Dict[str, Any]]) -> None:
         if isinstance(models, list):
             for model in models:
                 if isinstance(model, Model):
@@ -129,16 +131,17 @@ class ModelServer:
                     model.enable_latency_logging = self.enable_latency_logging
                 else:
                     raise RuntimeError("Model type should be 'Model'")
-        elif isinstance(models, dict):
-            if all([isinstance(v, Deployment) for v in models.values()]):
-                # TODO: make this port number a variable
-                rayserve.start(detached=True, http_options={"host": "0.0.0.0", "port": 9071})
-                for key in models:
-                    models[key].deploy()
-                    handle = models[key].get_handle()
-                    self.register_model_handle(key, handle)
-            else:
-                raise RuntimeError("Model type should be RayServe Deployment")
+        # AIP: remove ray
+        # elif isinstance(models, dict):
+        #     if all([isinstance(v, Deployment) for v in models.values()]):
+        #         # TODO: make this port number a variable
+        #         rayserve.start(detached=True, http_options={"host": "0.0.0.0", "port": 9071})
+        #         for key in models:
+        #             models[key].deploy()
+        #             handle = models[key].get_handle()
+        #             self.register_model_handle(key, handle)
+        #     else:
+        #         raise RuntimeError("Model type should be RayServe Deployment")
         else:
             raise RuntimeError("Unknown model collection types")
 
@@ -198,7 +201,8 @@ class ModelServer:
             logger.info("Stopping the grpc server")
             await self._grpc_server.stop(sig)
 
-    def register_model_handle(self, name: str, model_handle: RayServeHandle):
+    # def register_model_handle(self, name: str, model_handle: RayServeHandle):  # AIP: remove ray.
+    def register_model_handle(self, name: str, model_handle: Any):
         self.registered_models.update_handle(name, model_handle)
         logger.info("Registering model handle: %s", name)
 

@@ -23,13 +23,14 @@ import avro
 import pytest
 from cloudevents.conversion import to_binary, to_structured
 from cloudevents.http import CloudEvent
-from ray import serve
+# AIP: remove ray
+# from ray import serve
 
 from kserve.errors import InvalidInput, ModelNotFound
 from kserve.protocol.dataplane import DataPlane
 from kserve.model_repository import ModelRepository
-from test.test_server import DummyModel, dummy_cloud_event, DummyCEModel, DummyAvroCEModel, \
-    DummyServeModel
+from test.test_server import DummyModel, dummy_cloud_event, DummyCEModel, DummyAvroCEModel
+# AIP: remove ray    DummyServeModel
 
 
 @pytest.mark.asyncio
@@ -48,14 +49,15 @@ class TestDataPlane:
             model.load()
             dataplane._model_registry.update(model)
             yield dataplane
-        else:  # request.param == "TEST_RAY_SERVE_MODEL"
-            serve.start(detached=False, http_options={"host": "0.0.0.0", "port": 9071})
-            DummyServeModel.deploy(self.MODEL_NAME)
-            handle = DummyServeModel.get_handle()
-            handle.load.remote()
-            dataplane._model_registry.update_handle(self.MODEL_NAME, handle)
-            yield dataplane
-            serve.shutdown()
+        # AIP: remove ray
+        # else:  # request.param == "TEST_RAY_SERVE_MODEL"
+        #     serve.start(detached=False, http_options={"host": "0.0.0.0", "port": 9071})
+        #     DummyServeModel.deploy(self.MODEL_NAME)
+        #     handle = DummyServeModel.get_handle()
+        #     handle.load.remote()
+        #     dataplane._model_registry.update_handle(self.MODEL_NAME, handle)
+        #     yield dataplane
+        #     serve.shutdown()
 
     async def test_get_model_from_registry(self):
         dataplane = DataPlane(model_registry=ModelRepository())

@@ -19,8 +19,11 @@ avro>=1.11.0
 # AIP: remove boto dependencies as we are not using them and they will slow down dependency resolution
 # boto3~=1.21
 psutil>=5.9.0
-# AIP: relax ray for vllm
-ray[serve]>=2.0.0
+# AIP: Remove ray.
+# AIP doesn't need ray, but LLMP does for vllm. RayServeHandle is removed in ray v2.10.
+# So ray v2.10 the highest version this KServe version can support. That's too old for vllm. 
+# Check the versions again in the next KServe upgrade to determine if we can keep ray.
+# ray[serve]>=2.0.0
 grpcio>=1.34.0
 tritonclient==2.18.0
 protobuf>=3.19.0

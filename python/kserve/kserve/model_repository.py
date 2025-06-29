@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, Any
 from .model import Model
-from ray.serve.api import RayServeHandle
+# AIP: remove ray
+# from ray.serve.api import RayServeHandle
 import os
 
 MODEL_MOUNT_DIRS = "/mnt/models"
@@ -30,7 +31,8 @@ class ModelRepository:
     """
 
     def __init__(self, models_dir: str = MODEL_MOUNT_DIRS):
-        self.models: Dict[str, Union[Model, RayServeHandle]] = {}
+        # self.models: Dict[str, Union[Model, RayServeHandle]] = {}  # AIP: remove ray
+        self.models: Dict[str, Model] = {}
         self.models_dir = models_dir
 
     def load_models(self):
@@ -42,10 +44,12 @@ class ModelRepository:
     def set_models_dir(self, models_dir):  # used for unit tests
         self.models_dir = models_dir
 
-    def get_model(self, name: str) -> Optional[Union[Model, RayServeHandle]]:
+    # def get_model(self, name: str) -> Optional[Union[Model, RayServeHandle]]:  # AIP: remove ray
+    def get_model(self, name: str) -> Optional[Model]:
         return self.models.get(name, None)
 
-    def get_models(self) -> Dict[str, Union[Model, RayServeHandle]]:
+    # def get_models(self) -> Dict[str, Union[Model, RayServeHandle]]:  # AIP: remove ray
+    def get_models(self) -> Dict[str, Model]:
         return self.models
 
     def is_model_ready(self, name: str):
@@ -61,7 +65,8 @@ class ModelRepository:
     def update(self, model: Model):
         self.models[model.name] = model
 
-    def update_handle(self, name: str, model_handle: RayServeHandle):
+    # def update_handle(self, name: str, model_handle: RayServeHandle):  # AIP: remove ray
+    def update_handle(self, name: str, model_handle: Any):
         self.models[name] = model_handle
 
     def load(self, name: str) -> bool:
