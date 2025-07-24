@@ -14,6 +14,7 @@
 from typing import Optional, Union, Dict, List
 
 from fastapi import Request, Response
+from fastapi.responses import ORJSONResponse
 
 from kserve.errors import ModelNotReady
 from ..dataplane import DataPlane
@@ -67,14 +68,17 @@ class V1Endpoints:
         body = await request.body()
         headers = dict(request.headers.items())
 
-        # TODO AIP: Get the status code from the infer method and add it to the response.
+        # AIP: Return user defined status code in the response.
+        # Get the status code from the infer method and add it to the response.
         # response, response_headers = await self.dataplane.infer(model_name=model_name, body=body, headers=headers)
-        # if not isinstance(response, dict):
-        #     return Response(content=response, headers=response_headers, status_code=status_code)  # TODO pass the status code to the response.
-        # return response
-
         response, response_headers, status_code = await self.dataplane.infer(model_name=model_name, body=body, headers=headers)
-        return Response(content=response, headers=response_headers, status_code=status_code)
+        
+        if not isinstance(response, dict):
+            return Response(content=response, headers=response_headers)
+        
+        # Use ORJSONResponse for faster response and pass the status code to the response.
+        # return response
+        return ORJSONResponse(content=response, headers=response_headers, status_code=status_code)
         # AIP change ends.
         
     async def explain(self, model_name: str, request: Request) -> Union[Response, Dict]:
