@@ -263,16 +263,6 @@ class DataPlane:
             else:
                 response_headers["content-type"] = "application/cloudevents+json"        
         
-        # AIP:
-        # Add user defined response headers to the response.
-        response_headers.update(response.get("headers", {}))
-        
-        # Extract the body from user's response, as it is the actual response.
-        response = response.get("body", {})
-        
-        # TODO Add tracing and orjson.dumps here.
-        # AIP change ends.
-        
         return response, response_headers
 
     async def infer(
@@ -316,11 +306,22 @@ class DataPlane:
 
         logging.info(f"Model's response: {response}")  # TODO remove this after testing.
 
-        # AIP: add user specified status code to the response.
-        status_code = response.get("status_code", HTTPStatus.OK)
-
         response, response_headers = self.encode(model_name, body, response, headers)
 
+        # AIP: Extract the response code and headers, and the body from user's response.
+        # Add user defined response headers to the response.
+        response_headers.update(response.get("headers", {}))
+
+        # Convert the response headers to strings, as headers are always strings.
+        response_headers = {k: str(v) for k, v in response_headers.items()}
+
+        # AIP: add user specified status code to the response.
+        status_code = response.get("status_code", HTTPStatus.OK)
+        
+        # Finally, set the response to the body from user's response, as it is the actual response.
+        response = response.get("body", {})
+        # AIP change ends.
+        
         logging.info(
             f"Returning response: {response}, response_headers: {response_headers}, status_code: {status_code}"  # noqa: E501
         )  # TODO remove this after testing.
