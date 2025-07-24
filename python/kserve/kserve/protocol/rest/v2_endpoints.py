@@ -127,8 +127,12 @@ class V2Endpoints:
         infer_inputs = [InferInput(name=input.name, shape=input.shape, datatype=input.datatype,
                                    data=input.data) for input in request_body.inputs]
         infer_request = InferRequest(model_name=model_name, infer_inputs=infer_inputs)
-        response, response_headers = await self.dataplane.infer(
+        
+        # AIP: ignore the extra values returned by the infer method.
+        # response, response_headers = await self.dataplane.infer(
+        response, response_headers, *_ = await self.dataplane.infer(
             model_name=model_name, body=infer_request, headers=request_headers)
+        # AIP change ends.
 
         if response_headers:
             raw_response.headers.update(response_headers)

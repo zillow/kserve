@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from http import HTTPStatus
 from typing import Dict, Union, Tuple, Optional
 
 import cloudevents.exceptions as ce
 import orjson
+import os
 import pkg_resources
 from cloudevents.http import CloudEvent, from_http
 from cloudevents.sdk.converters.util import has_binary_headers
@@ -218,6 +220,13 @@ class DataPlane:
         return self._model_registry.is_model_ready(model_name)
 
     def decode(self, body, headers) -> Union[Dict, InferRequest]:
+        # TODO remove the logging after testing.
+        if os.getenv("AIP_DD_APM_ENABLED", "false") == "true":
+            logging.info(f"AIP Datadog APM is enabled.")
+            # TODO AIP: add tracing here.
+        else:
+            logging.info(f"AIP Datadog APM is NOT enabled.")
+
         t1 = time.time()
         if isinstance(body, InferRequest):
             return body
@@ -227,6 +236,7 @@ class DataPlane:
             if type(body) is bytes:
                 try:
                     body = orjson.loads(body)
+                    logging.info(f"Called orjson.loads.") # TODO remove this after testing.
                 except orjson.JSONDecodeError as e:
                     raise InvalidInput(f"Unrecognized request format: {e}")
         t2 = time.time()
@@ -251,7 +261,18 @@ class DataPlane:
             if is_binary_cloudevent:
                 response_headers["content-type"] = "application/json"
             else:
-                response_headers["content-type"] = "application/cloudevents+json"
+                response_headers["content-type"] = "application/cloudevents+json"        
+        
+        # AIP:
+        # Add user defined response headers to the response.
+        response_headers.update(response.get("headers", {}))
+        
+        # Extract the body from user's response, as it is the actual response.
+        response = response.get("body", {})
+        
+        # TODO Add tracing and orjson.dumps here.
+        # AIP change ends.
+        
         return response, response_headers
 
     async def infer(
@@ -293,8 +314,18 @@ class DataPlane:
         #     model_handle: RayServeHandle = model
         #     response = await model_handle.remote(body)
 
+        logging.info(f"Model's response: {response}")  # TODO remove this after testing.
+
+        # AIP: add user specified status code to the response.
+        status_code = response.get("status_code", HTTPStatus.OK)
+
         response, response_headers = self.encode(model_name, body, response, headers)
-        return response, response_headers
+
+        logging.info(
+            f"Returning response: {response}, response_headers: {response_headers}, status_code: {status_code}"  # noqa: E501
+        )  # TODO remove this after testing.
+        
+        return response, response_headers, status_code
 
     async def explain(self, model_name: str,
                       body: Union[bytes, Dict, InferRequest],

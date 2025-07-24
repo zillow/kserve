@@ -66,12 +66,17 @@ class V1Endpoints:
         """
         body = await request.body()
         headers = dict(request.headers.items())
-        response, response_headers = await self.dataplane.infer(model_name=model_name, body=body, headers=headers)
 
-        if not isinstance(response, dict):
-            return Response(content=response, headers=response_headers)
-        return response
+        # TODO AIP: Get the status code from the infer method and add it to the response.
+        # response, response_headers = await self.dataplane.infer(model_name=model_name, body=body, headers=headers)
+        # if not isinstance(response, dict):
+        #     return Response(content=response, headers=response_headers, status_code=status_code)  # TODO pass the status code to the response.
+        # return response
 
+        response, response_headers, status_code = await self.dataplane.infer(model_name=model_name, body=body, headers=headers)
+        return Response(content=response, headers=response_headers, status_code=status_code)
+        # AIP change ends.
+        
     async def explain(self, model_name: str, request: Request) -> Union[Response, Dict]:
         """Explain handler.
 
