@@ -21,6 +21,8 @@ import os
 import pkg_resources
 from cloudevents.http import CloudEvent, from_http
 from cloudevents.sdk.converters.util import has_binary_headers
+from ddtrace import tracer
+
 # AIP: remove ray
 # from ray.serve.api import RayServeHandle
 
@@ -220,13 +222,6 @@ class DataPlane:
         return self._model_registry.is_model_ready(model_name)
 
     def decode(self, body, headers) -> Union[Dict, InferRequest]:
-        # TODO remove the logging after testing.
-        if os.getenv("AIP_DD_APM_ENABLED", "false") == "true":
-            logging.info(f"AIP Datadog APM is enabled.")
-            # TODO AIP: add tracing here.
-        else:
-            logging.info(f"AIP Datadog APM is NOT enabled.")
-
         t1 = time.time()
         if isinstance(body, InferRequest):
             return body
@@ -234,9 +229,16 @@ class DataPlane:
             body = self.get_binary_cloudevent(body, headers)
         else:
             if type(body) is bytes:
+                # AIP: add Datadog trace for json.loads.
+                # body = orjson.loads(body)
                 try:
-                    body = orjson.loads(body)
+                    if os.getenv("AIP_DD_APM_ENABLED", "false") == "true":
+                        with tracer.trace("json.loads"):
+                            body = orjson.loads(body)
+                    else:
+                        body = orjson.loads(body)
                     logging.info(f"Called orjson.loads.") # TODO remove this after testing.
+                # AIP change ends.
                 except orjson.JSONDecodeError as e:
                     raise InvalidInput(f"Unrecognized request format: {e}")
         t2 = time.time()

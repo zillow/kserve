@@ -13,6 +13,9 @@
 # limitations under the License.
 from typing import Optional, Union, Dict, List
 
+import os
+from ddtrace import tracer
+
 from fastapi import Request, Response
 from fastapi.responses import ORJSONResponse
 
@@ -76,9 +79,15 @@ class V1Endpoints:
         if not isinstance(response, dict):
             return Response(content=response, headers=response_headers)
         
-        # Use ORJSONResponse for faster response and pass the status code to the response.
+        # Add Datadog write span. 
+        # Use ORJSONResponse, instead of plain response for faster response.
+        # Also pass the status code to the response.
         # return response
-        return ORJSONResponse(content=response, headers=response_headers, status_code=status_code)
+        if os.getenv("AIP_DD_APM_ENABLED", "false") == "true":
+            with tracer.trace("write response"):
+                return ORJSONResponse(content=response, headers=response_headers, status_code=status_code)
+        else:
+            return ORJSONResponse(content=response, headers=response_headers, status_code=status_code)
         # AIP change ends.
         
     async def explain(self, model_name: str, request: Request) -> Union[Response, Dict]:
