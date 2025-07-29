@@ -18,7 +18,9 @@ from typing import Dict, Union, Tuple, Optional
 import cloudevents.exceptions as ce
 import orjson
 import os
-import pkg_resources
+# AIP: Use importlib instead of pkg_resources to get the version.
+# import pkg_resources
+from importlib.metadata import version
 from cloudevents.http import CloudEvent, from_http
 from cloudevents.sdk.converters.util import has_binary_headers
 from ddtrace import tracer
@@ -48,9 +50,9 @@ class DataPlane:
 
         # Dynamically fetching version of the installed 'kserve' distribution. The assumption is
         # that 'kserve' will already be installed by the time this class is instantiated.
-        # AIP: Get the 'zillow-kserve' distribution instead of 'kserve'.
+        # AIP: Get the 'zillow-kserve' distribution instead of 'kserve' and use importlib.
         # self._server_version = pkg_resources.get_distribution("kserve").version
-        self._server_version = pkg_resources.get_distribution("zillow-kserve").version
+        self._server_version = version("zillow-kserve")
         # AIP change ends
 
     @property
@@ -237,7 +239,6 @@ class DataPlane:
                             body = orjson.loads(body)
                     else:
                         body = orjson.loads(body)
-                    logging.info(f"Called orjson.loads.") # TODO remove this after testing.
                 # AIP change ends.
                 except orjson.JSONDecodeError as e:
                     raise InvalidInput(f"Unrecognized request format: {e}")
@@ -306,8 +307,6 @@ class DataPlane:
         #     model_handle: RayServeHandle = model
         #     response = await model_handle.remote(body)
 
-        logging.info(f"Model's response: {response}")  # TODO remove this after testing.
-
         response, response_headers = self.encode(model_name, body, response, headers)
 
         # AIP: Extract the response code and headers, and the body from user's response.
@@ -323,10 +322,6 @@ class DataPlane:
         # Finally, set the response to the body from user's response, as it is the actual response.
         response = response.get("body", {})
         # AIP change ends.
-        
-        logging.info(
-            f"Returning response: {response}, response_headers: {response_headers}, status_code: {status_code}"  # noqa: E501
-        )  # TODO remove this after testing.
         
         return response, response_headers, status_code
 

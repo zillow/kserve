@@ -17,7 +17,9 @@ import logging
 import socket
 from typing import Dict, List, Optional, Union
 
-import pkg_resources
+# AIP: Use importlib instead of pkg_resources to get the version.
+# import pkg_resources
+from importlib.metadata import version
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import ORJSONResponse
@@ -73,9 +75,9 @@ class RESTServer:
 
         return FastAPI(
             title="KServe ModelServer",
-            # AIP: Get the 'zillow-kserve' distribution instead of 'kserve'.
+            # AIP: Get the 'zillow-kserve' distribution instead of 'kserve' and use importlib.
             # version=pkg_resources.get_distribution("kserve").version,
-            version=pkg_resources.get_distribution("zillow-kserve").version,
+            version=version("zillow-kserve"),
             # AIP change ends
             docs_url="/docs" if self.enable_docs_url else None,
             redoc_url=None,
