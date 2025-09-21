@@ -12,14 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from http import HTTPStatus
 from typing import Dict, Union, Tuple, Optional
 
 import cloudevents.exceptions as ce
 import orjson
-import pkg_resources
+import os
+# AIP: Use importlib instead of pkg_resources to get the version.
+# import pkg_resources
+from importlib.metadata import version
 from cloudevents.http import CloudEvent, from_http
 from cloudevents.sdk.converters.util import has_binary_headers
-from ray.serve.api import RayServeHandle
+from ddtrace import tracer
+
+# AIP: remove ray
+# from ray.serve.api import RayServeHandle
 
 from ..model import Model
 from ..errors import InvalidInput, ModelNotFound
@@ -43,29 +50,36 @@ class DataPlane:
 
         # Dynamically fetching version of the installed 'kserve' distribution. The assumption is
         # that 'kserve' will already be installed by the time this class is instantiated.
-        self._server_version = pkg_resources.get_distribution("kserve").version
+        # AIP: Get the 'zillow-kserve' distribution instead of 'kserve' and use importlib.
+        # self._server_version = pkg_resources.get_distribution("kserve").version
+        self._server_version = version("zillow-kserve")
+        # AIP change ends
 
     @property
     def model_registry(self):
         return self._model_registry
 
-    def get_model_from_registry(self, name: str) -> Union[Model, RayServeHandle]:
+    # def get_model_from_registry(self, name: str) -> Union[Model, RayServeHandle]:  # AIP: remove ray
+    def get_model_from_registry(self, name: str) -> Model:
         model = self._model_registry.get_model(name)
         if model is None:
             raise ModelNotFound(name)
 
         return model
 
-    def get_model(self, name: str) -> Union[Model, RayServeHandle]:
+    # def get_model(self, name: str) -> Union[Model, RayServeHandle]:  # AIP: remove ray
+    def get_model(self, name: str) -> Model:
         """Get the model instance with the given name.
 
-        The instance can be either ``Model`` or ``RayServeHandle``.
+        ## The instance can be either ``Model`` or ``RayServeHandle``. ##
+        AIP: The instance will be ``Model`.
 
         Args:
             name (str): Model name.
 
         Returns:
-            Model|RayServeHandle: Instance of the model.
+            AIP: ## Model|RayServeHandle##  Model: Instance of the model.
+            
         """
         model = self._model_registry.get_model(name)
         if model is None:
@@ -162,14 +176,18 @@ class DataPlane:
         """
         # TODO: model versioning is not supported yet
         model = self.get_model_from_registry(model_name)
-
-        if not isinstance(model, RayServeHandle):
-            input_types = model.get_input_types()
-            output_types = model.get_output_types()
-        else:
-            model_handle: RayServeHandle = model
-            input_types = await model_handle.get_input_types.remote()
-            output_types = await model_handle.get_output_types.remote()
+        
+        # AIP: remove ray
+        input_types = model.get_input_types()
+        output_types = model.get_output_types()
+        # if not isinstance(model, RayServeHandle):
+        #     input_types = model.get_input_types()
+        #     output_types = model.get_output_types()
+        # else:
+        #     model_handle: RayServeHandle = model
+        #     input_types = await model_handle.get_input_types.remote()
+        #     output_types = await model_handle.get_output_types.remote()
+        
         return {
             "name": model_name,
             "platform": "",
@@ -213,8 +231,15 @@ class DataPlane:
             body = self.get_binary_cloudevent(body, headers)
         else:
             if type(body) is bytes:
+                # AIP: add Datadog trace for json.loads.
+                # body = orjson.loads(body)
                 try:
-                    body = orjson.loads(body)
+                    if os.getenv("AIP_DD_APM_ENABLED", "false") == "true":
+                        with tracer.trace("json.loads"):
+                            body = orjson.loads(body)
+                    else:
+                        body = orjson.loads(body)
+                # AIP change ends.
                 except orjson.JSONDecodeError as e:
                     raise InvalidInput(f"Unrecognized request format: {e}")
         t2 = time.time()
@@ -239,7 +264,8 @@ class DataPlane:
             if is_binary_cloudevent:
                 response_headers["content-type"] = "application/json"
             else:
-                response_headers["content-type"] = "application/cloudevents+json"
+                response_headers["content-type"] = "application/cloudevents+json"        
+        
         return response, response_headers
 
     async def infer(
@@ -272,14 +298,32 @@ class DataPlane:
 
         # call model locally or remote model workers
         model = self.get_model(model_name)
-        if not isinstance(model, RayServeHandle):
-            response = await model(body, headers=headers)
-        else:
-            model_handle: RayServeHandle = model
-            response = await model_handle.remote(body)
+
+        # AIP: remove ray
+        response = await model(body, headers=headers)
+        # if not isinstance(model, RayServeHandle):
+        #     response = await model(body, headers=headers)
+        # else:
+        #     model_handle: RayServeHandle = model
+        #     response = await model_handle.remote(body)
 
         response, response_headers = self.encode(model_name, body, response, headers)
-        return response, response_headers
+
+        # AIP: Extract the response code and headers, and the body from user's response.
+        # Add user defined response headers to the response.
+        response_headers.update(response.get("headers", {}))
+
+        # Convert the response headers to strings, as headers are always strings.
+        response_headers = {k: str(v) for k, v in response_headers.items()}
+
+        # AIP: add user specified status code to the response.
+        status_code = response.get("status_code", HTTPStatus.OK)
+        
+        # Finally, set the response to the body from user's response, as it is the actual response.
+        response = response.get("body", {})
+        # AIP change ends.
+        
+        return response, response_headers, status_code
 
     async def explain(self, model_name: str,
                       body: Union[bytes, Dict, InferRequest],
@@ -302,10 +346,14 @@ class DataPlane:
 
         # call model locally or remote model workers
         model = self.get_model(model_name)
-        if not isinstance(model, RayServeHandle):
-            response = await model(body, model_type=ModelType.EXPLAINER)
-        else:
-            model_handle = model
-            response = await model_handle.remote(body, model_type=ModelType.EXPLAINER)
+
+        # AIP: remove ray
+        response = await model(body, model_type=ModelType.EXPLAINER)
+        # if not isinstance(model, RayServeHandle):
+        #     response = await model(body, model_type=ModelType.EXPLAINER)
+        # else:
+        #     model_handle = model
+        #     response = await model_handle.remote(body, model_type=ModelType.EXPLAINER)
+        
         response, response_headers = self.encode(model_name, body, response, headers)
         return response, response_headers

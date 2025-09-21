@@ -27,16 +27,19 @@ TESTS_REQUIRES = [
 with open('requirements.txt') as f:
     REQUIRES = f.readlines()
 
-with open(pathlib.Path(__file__).parent.parent / 'VERSION') as version_file:
+# AIP: Use the VERSION file in the same directory.
+# It is created there by the build:publish step in .gitlab-ci.yaml.
+with open('VERSION') as version_file:
+# AIP change ends.
     version = version_file.read().strip()
 
 setuptools.setup(
-    name='zillow-kserve',
+    name='zillow-kserve', # AIP fork name
     version=version,
     author="The KServe Authors",
     author_email='ellisbigelow@google.com, hejinchi@cn.ibm.com, dsun20@bloomberg.net',
     license="Apache License Version 2.0",
-    url="https://github.com/kserve/kserve/tree/master/python/kserve",
+    url="https://github.com/zillow/kserve/tree/master/python/kserve", # AIP fork URL
     description="KServe Python SDK",
     long_description="Python SDK for KServe Server and Client.",
     python_requires='>=3.7',

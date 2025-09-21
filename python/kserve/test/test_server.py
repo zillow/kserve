@@ -24,7 +24,8 @@ import pytest
 from cloudevents.conversion import to_binary, to_structured
 from cloudevents.http import CloudEvent
 from fastapi.testclient import TestClient
-from ray import serve
+# AIP: remove ray
+# from ray import serve
 
 from kserve import Model, ModelServer, ModelRepository
 from kserve.errors import InvalidInput
@@ -79,21 +80,22 @@ class DummyModel(Model):
         return {"predictions": request["instances"]}
 
 
-@serve.deployment
-class DummyServeModel(Model):
-    def __init__(self, name):
-        super().__init__(name)
-        self.name = name
-        self.ready = False
+# AIP: remove ray
+# @serve.deployment
+# class DummyServeModel(Model):
+#     def __init__(self, name):
+#         super().__init__(name)
+#         self.name = name
+#         self.ready = False
 
-    def load(self):
-        self.ready = True
+#     def load(self):
+#         self.ready = True
 
-    async def predict(self, request, headers=None):
-        return {"predictions": request["instances"]}
+#     async def predict(self, request, headers=None):
+#         return {"predictions": request["instances"]}
 
-    async def explain(self, request, headers=None):
-        return {"predictions": request["instances"]}
+#     async def explain(self, request, headers=None):
+#         return {"predictions": request["instances"]}
 
 
 class DummyCEModel(Model):
@@ -245,52 +247,53 @@ class TestTFHttpServer:
         assert resp.content is not None
 
 
-class TestRayServer:
-    @pytest.fixture(scope="class")
-    def app(self):  # pylint: disable=no-self-use
-        serve.start(detached=False, http_options={"host": "0.0.0.0", "port": 9071})
+# AIP: remove ray
+# class TestRayServer:
+#     @pytest.fixture(scope="class")
+#     def app(self):  # pylint: disable=no-self-use
+#         serve.start(detached=False, http_options={"host": "0.0.0.0", "port": 9071})
 
-        DummyServeModel.deploy("TestModel")
-        handle = DummyServeModel.get_handle()
-        handle.load.remote()
+#         DummyServeModel.deploy("TestModel")
+#         handle = DummyServeModel.get_handle()
+#         handle.load.remote()
 
-        server = ModelServer()
-        server.register_model_handle("TestModel", handle)
-        rest_server = RESTServer(server.dataplane, server.model_repository_extension)
-        return rest_server.create_application()
+#         server = ModelServer()
+#         server.register_model_handle("TestModel", handle)
+#         rest_server = RESTServer(server.dataplane, server.model_repository_extension)
+#         return rest_server.create_application()
 
-    @pytest.fixture(scope='class')
-    def http_server_client(self, app):
-        return TestClient(app)
+#     @pytest.fixture(scope='class')
+#     def http_server_client(self, app):
+#         return TestClient(app)
 
-    def test_liveness_handler(self, http_server_client):
-        resp = http_server_client.get('/')
-        assert resp.status_code == 200
-        assert resp.content == b'{"status":"alive"}'
+#     def test_liveness_handler(self, http_server_client):
+#         resp = http_server_client.get('/')
+#         assert resp.status_code == 200
+#         assert resp.content == b'{"status":"alive"}'
 
-    def test_list_handler(self, http_server_client):
-        resp = http_server_client.get('/v1/models')
-        assert resp.status_code == 200
-        assert resp.content == b'{"models":["TestModel"]}'
+#     def test_list_handler(self, http_server_client):
+#         resp = http_server_client.get('/v1/models')
+#         assert resp.status_code == 200
+#         assert resp.content == b'{"models":["TestModel"]}'
 
-    def test_health_handler(self, http_server_client):
-        resp = http_server_client.get('/v1/models/TestModel')
-        assert resp.status_code == 200
-        assert resp.content == b'{"name":"TestModel","ready":true}'
+#     def test_health_handler(self, http_server_client):
+#         resp = http_server_client.get('/v1/models/TestModel')
+#         assert resp.status_code == 200
+#         assert resp.content == b'{"name":"TestModel","ready":true}'
 
-    def test_predict(self, http_server_client):
-        resp = http_server_client.post('/v1/models/TestModel:predict',
-                                       data=b'{"instances":[[1,2]]}')
-        assert resp.status_code == 200
-        assert resp.content == b'{"predictions":[[1,2]]}'
-        assert resp.headers['content-type'] == "application/json"
+#     def test_predict(self, http_server_client):
+#         resp = http_server_client.post('/v1/models/TestModel:predict',
+#                                        data=b'{"instances":[[1,2]]}')
+#         assert resp.status_code == 200
+#         assert resp.content == b'{"predictions":[[1,2]]}'
+#         assert resp.headers['content-type'] == "application/json"
 
-    def test_explain(self, http_server_client):
-        resp = http_server_client.post('/v1/models/TestModel:explain',
-                                       data=b'{"instances":[[1,2]]}')
-        assert resp.status_code == 200
-        assert resp.content == b'{"predictions":[[1,2]]}'
-        assert resp.headers['content-type'] == "application/json"
+#     def test_explain(self, http_server_client):
+#         resp = http_server_client.post('/v1/models/TestModel:explain',
+#                                        data=b'{"instances":[[1,2]]}')
+#         assert resp.status_code == 200
+#         assert resp.content == b'{"predictions":[[1,2]]}'
+#         assert resp.headers['content-type'] == "application/json"
 
 
 class TestTFHttpServerModelNotLoaded:

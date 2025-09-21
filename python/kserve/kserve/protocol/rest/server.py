@@ -17,7 +17,9 @@ import logging
 import socket
 from typing import Dict, List, Optional, Union
 
-import pkg_resources
+# AIP: Use importlib instead of pkg_resources to get the version.
+# import pkg_resources
+from importlib.metadata import version
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import ORJSONResponse
@@ -73,7 +75,10 @@ class RESTServer:
 
         return FastAPI(
             title="KServe ModelServer",
-            version=pkg_resources.get_distribution("kserve").version,
+            # AIP: Get the 'zillow-kserve' distribution instead of 'kserve' and use importlib.
+            # version=pkg_resources.get_distribution("kserve").version,
+            version=version("zillow-kserve"),
+            # AIP change ends
             docs_url="/docs" if self.enable_docs_url else None,
             redoc_url=None,
             default_response_class=ORJSONResponse,
@@ -88,32 +93,34 @@ class RESTServer:
                 FastAPIRoute(r"/v1/models/{model_name}", v1_endpoints.model_ready, tags=["V1"]),
                 FastAPIRoute(r"/v1/models/{model_name}:predict",
                              v1_endpoints.predict, methods=["POST"], tags=["V1"]),
-                FastAPIRoute(r"/v1/models/{model_name}:explain",
-                             v1_endpoints.explain, methods=["POST"], tags=["V1"]),
+                # AIP: Disable unused endpoints.
+                # FastAPIRoute(r"/v1/models/{model_name}:explain",
+                #              v1_endpoints.explain, methods=["POST"], tags=["V1"]),
                 # V2 Inference Protocol
                 # https://github.com/kserve/kserve/tree/master/docs/predict-api/v2
-                FastAPIRoute(r"/v2", v2_endpoints.metadata,
-                             response_model=ServerMetadataResponse, tags=["V2"]),
-                FastAPIRoute(r"/v2/health/live", v2_endpoints.live,
-                             response_model=ServerLiveResponse, tags=["V2"]),
-                FastAPIRoute(r"/v2/health/ready", v2_endpoints.ready,
-                             response_model=ServerReadyResponse, tags=["V2"]),
-                FastAPIRoute(r"/v2/models/{model_name}",
-                             v2_endpoints.model_metadata, response_model=ModelMetadataResponse, tags=["V2"]),
-                FastAPIRoute(r"/v2/models/{model_name}/versions/{model_version}",
-                             v2_endpoints.model_metadata, tags=["V2"], include_in_schema=False),
-                FastAPIRoute(r"/v2/models/{model_name}/ready",
-                             v2_endpoints.model_ready, response_model=ModelReadyResponse, tags=["V2"]),
-                FastAPIRoute(r"v2/models/{model_name}/versions/{model_version}/ready",
-                             v2_endpoints.model_ready, response_model=ModelReadyResponse, tags=["V2"]),
-                FastAPIRoute(r"/v2/models/{model_name}/infer",
-                             v2_endpoints.infer, methods=["POST"], response_model=InferenceResponse, tags=["V2"]),
-                FastAPIRoute(r"/v2/models/{model_name}/versions/{model_version}/infer",
-                             v2_endpoints.infer, methods=["POST"], tags=["V2"], include_in_schema=False),
-                FastAPIRoute(r"/v2/repository/models/{model_name}/load",
-                             v2_endpoints.load, methods=["POST"], tags=["V2"]),
-                FastAPIRoute(r"/v2/repository/models/{model_name}/unload",
-                             v2_endpoints.unload, methods=["POST"], tags=["V2"]),
+                # FastAPIRoute(r"/v2", v2_endpoints.metadata,
+                #              response_model=ServerMetadataResponse, tags=["V2"]),
+                # FastAPIRoute(r"/v2/health/live", v2_endpoints.live,
+                #              response_model=ServerLiveResponse, tags=["V2"]),
+                # FastAPIRoute(r"/v2/health/ready", v2_endpoints.ready,
+                #              response_model=ServerReadyResponse, tags=["V2"]),
+                # FastAPIRoute(r"/v2/models/{model_name}",
+                #              v2_endpoints.model_metadata, response_model=ModelMetadataResponse, tags=["V2"]),
+                # FastAPIRoute(r"/v2/models/{model_name}/versions/{model_version}",
+                #              v2_endpoints.model_metadata, tags=["V2"], include_in_schema=False),
+                # FastAPIRoute(r"/v2/models/{model_name}/ready",
+                #              v2_endpoints.model_ready, response_model=ModelReadyResponse, tags=["V2"]),
+                # FastAPIRoute(r"v2/models/{model_name}/versions/{model_version}/ready",
+                #              v2_endpoints.model_ready, response_model=ModelReadyResponse, tags=["V2"]),
+                # FastAPIRoute(r"/v2/models/{model_name}/infer",
+                #              v2_endpoints.infer, methods=["POST"], response_model=InferenceResponse, tags=["V2"]),
+                # FastAPIRoute(r"/v2/models/{model_name}/versions/{model_version}/infer",
+                #              v2_endpoints.infer, methods=["POST"], tags=["V2"], include_in_schema=False),
+                # FastAPIRoute(r"/v2/repository/models/{model_name}/load",
+                #              v2_endpoints.load, methods=["POST"], tags=["V2"]),
+                # FastAPIRoute(r"/v2/repository/models/{model_name}/unload",
+                #              v2_endpoints.unload, methods=["POST"], tags=["V2"]),
+                # AIP change ends.
             ], exception_handlers={
                 InvalidInput: invalid_input_handler,
                 InferenceError: inference_error_handler,

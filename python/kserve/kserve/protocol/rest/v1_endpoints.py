@@ -13,7 +13,11 @@
 # limitations under the License.
 from typing import Optional, Union, Dict, List
 
+import os
+from ddtrace import tracer
+
 from fastapi import Request, Response
+from fastapi.responses import ORJSONResponse
 
 from kserve.errors import ModelNotReady
 from ..dataplane import DataPlane
@@ -66,12 +70,26 @@ class V1Endpoints:
         """
         body = await request.body()
         headers = dict(request.headers.items())
-        response, response_headers = await self.dataplane.infer(model_name=model_name, body=body, headers=headers)
 
+        # AIP: Return user defined status code in the response.
+        # Get the status code from the infer method and add it to the response.
+        # response, response_headers = await self.dataplane.infer(model_name=model_name, body=body, headers=headers)
+        response, response_headers, status_code = await self.dataplane.infer(model_name=model_name, body=body, headers=headers)
+        
         if not isinstance(response, dict):
             return Response(content=response, headers=response_headers)
-        return response
-
+        
+        # Add Datadog write span. 
+        # Use ORJSONResponse, instead of plain response for faster response.
+        # Also pass the status code to the response.
+        # return response
+        if os.getenv("AIP_DD_APM_ENABLED", "false") == "true":
+            with tracer.trace("write response"):
+                return ORJSONResponse(content=response, headers=response_headers, status_code=status_code)
+        else:
+            return ORJSONResponse(content=response, headers=response_headers, status_code=status_code)
+        # AIP change ends.
+        
     async def explain(self, model_name: str, request: Request) -> Union[Response, Dict]:
         """Explain handler.
 
