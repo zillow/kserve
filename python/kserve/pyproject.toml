@@ -19,6 +19,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Topic :: Scientific/Engineering",
@@ -31,7 +32,7 @@ packages = [{ include = "kserve" }]
 exclude = ["kserve/storage/test"]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = ">=3.9,<4"
 uvicorn = { version = "^0.30.6", extras = ["standard"] }
 fastapi = ">=0.115.3"
 cloudevents = "^1.6.2"
@@ -50,7 +51,7 @@ timing-asgi = "^0.3.0"
 tabulate = "^0.9.0"
 pandas = "^2.2.0"
 pydantic = [
-  { version = "^2.5.0", python = "3.12" },
+  { version = "^2.5.0", python = ">=3.12" },
   { version = ">1.0,<3", python = ">=3.9,<3.12" },
 ]
 pyyaml = "^6.0.0"
