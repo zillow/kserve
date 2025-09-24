@@ -10,8 +10,8 @@ include:
 variables:
   PY_LIBRARY_NAME: "zillow-kserve"
   MAJOR_VERSION: "0"
-  MINOR_VERSION: "10"
-  RELEASE_BRANCH: "zillow/release-0.10.2"
+  MINOR_VERSION: "15"
+  RELEASE_BRANCH: "zillow/release-0.15.2"
   PUBLISH: "true"
 
 stages:
@@ -35,24 +35,19 @@ build:publish:
   stage: build
   script:
   - *version
-  # Write the zillow-kserve version to python/kserve/VERSION.
-  # Only files in the python/kserve directory are included in the PyPI package,
-  # so the VERSION file must be in this directory.
-  # python/kserve/setup.py is updated to read the version from python/kserve/VERSION.
-  - echo "${PY_LIBRARY_VERSION}" > python/kserve/VERSION
+  # Only files in the python/kserve directory are included in the PyPI package.
+  # Therefore, we need to change to the kserve directory before building the package with Poetry.
   - cd python/kserve
-  - python setup.py sdist
-  # Set up the configuration for Artifactory to publish the python package internally.
-  - |
-    cat >~/.pypirc <<EOL
-    [distutils]
-    index-servers = local
-    [local]
-    repository: ${ANALYTICS_PYPI_REPOSITORY}
-    username: ${PYPI_USERNAME}
-    password: ${PYPI_PASSWORD}
-    EOL
-  - python setup.py sdist upload --repository "${ANALYTICS_PYPI_REPOSITORY}"
+
+  # Set our custom version to the kserve package.
+  - poetry version "${PY_LIBRARY_VERSION}"
+
+  # Configure Poetry to use the internal repository.
+  # Similar to https://gitlab.zgtools.net/analytics/artificial-intelligence/ai-platform/aip-infrastructure/ci-templates/ci-cd-template/-/blob/main/blocks/python.yml?ref_type=heads#L62-66
+  - poetry config repositories.analytics-pypi $ANALYTICS_PYPI_REPOSITORY
+  - poetry build
+  - poetry publish --repository analytics-pypi --username $PYPI_USERNAME --password $PYPI_PASSWORD
+
   rules:
     - if: '$PUBLISH == "true"'
     # only trigger on zillow/ branches
