@@ -95,7 +95,9 @@ class RESTServer:
         root_router.add_api_route(r"/metrics", metrics_handler, methods=["GET"])
         app.include_router(root_router)
         register_v1_endpoints(app, self.dataplane, self.model_repository_extension)
-        register_v2_endpoints(app, self.dataplane, self.model_repository_extension)
+
+        # AIP: Removed the v2 endpoints as we don't support the v2 API.
+        
         # Register OpenAI endpoints if any of the models in the registry implement the OpenAI interface
         # This adds /openai/v1/completions and /openai/v1/chat/completions routes to the
         # REST server.

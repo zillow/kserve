@@ -184,7 +184,8 @@ args, _ = parser.parse_known_args()
 
 app = FastAPI(
     title="KServe ModelServer",
-    version=metadata.version("kserve"),
+    # AIP: Get the 'zillow-kserve' distribution instead of 'kserve'.
+    version=metadata.version("zillow-kserve"),
     docs_url="/docs" if args.enable_docs_url else None,
     redoc_url=None,
     default_response_class=ORJSONResponse,
