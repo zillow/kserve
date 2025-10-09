@@ -473,14 +473,13 @@ class DataPlane:
         response, res_headers = await model(request, headers=headers)
         response_headers.update(res_headers)
 
-        # TODO: Confirm that the response headers and body are returned correctly.
-        # Otherwise, add them as in the previous implementation.
-        # See https://github.com/zillow/kserve/blob/zillow/release-0.10.2/python/kserve/kserve/protocol/dataplane.py#L312
-
-        # AIP: add user specified status code to the response.
+        # AIP:
+        # Extract "body" from the response and send it as the response.
+        # Return the user specified status code as the status code.
+        body = response.get("body")
         status_code = response.get("status_code", HTTPStatus.OK)
-
-        return response, response_headers, status_code
+        
+        return body, response_headers, status_code
 
     async def explain(
         self,
