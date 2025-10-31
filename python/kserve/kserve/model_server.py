@@ -17,6 +17,7 @@ import asyncio
 import concurrent.futures
 import signal
 import sys
+from contextlib import asynccontextmanager
 from importlib import metadata
 from typing import Any, Callable, Dict, List, Optional
 
@@ -182,6 +183,30 @@ parser.add_argument(
 )
 args, _ = parser.parse_known_args()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # TODO Call the post_init method of the models and remove the APM creation.
+    print("Entering lifespan")
+
+    import os
+    from ddtrace import config as ddtrace_config
+    from ddtrace import tracer
+    
+    DD_AGENT_PORT = int(os.getenv("DD_TRACE_AGENT_PORT", "8126"))
+    DD_AGENT_HOST = os.getenv("DD_AGENT_HOST", None)
+    AIP_DD_APM_ENABLED = os.getenv("AIP_DD_APM_ENABLED", "false")
+    if AIP_DD_APM_ENABLED == "true":
+        import ddtrace.auto  # noqa: F401
+
+        tracer.configure(hostname=DD_AGENT_HOST, port=DD_AGENT_PORT, https=False)
+
+        # Set the custom APM name: https://ddtrace.readthedocs.io/en/stable/integrations.html#id74  # noqa: E501
+        apm_svc_name = "v15-ns-zap-ash-aip-playground-dev"  # TODO: remove this hardcoded value
+        ddtrace_config.fastapi["service_name"] = apm_svc_name
+        print(f"Enabled Datadog APM with service name: {apm_svc_name}")
+    print("Completed lifespan before yield")
+    yield
+
 app = FastAPI(
     title="KServe ModelServer",
     # AIP: Get the 'zillow-kserve' distribution instead of 'kserve'.
@@ -189,6 +214,7 @@ app = FastAPI(
     docs_url="/docs" if args.enable_docs_url else None,
     redoc_url=None,
     default_response_class=ORJSONResponse,
+    lifespan=lifespan,
 )
 
 
