@@ -186,25 +186,19 @@ args, _ = parser.parse_known_args()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # TODO Call the post_init method of the models and remove the APM creation.
-    print("Entering lifespan")
+    # Set the custom APM name
+    sys.stderr.write("[LIFESPAN] Entering lifespan\n")
 
     import os
-    from ddtrace import config as ddtrace_config
-    from ddtrace import tracer
-    
-    DD_AGENT_PORT = int(os.getenv("DD_TRACE_AGENT_PORT", "8126"))
-    DD_AGENT_HOST = os.getenv("DD_AGENT_HOST", None)
-    AIP_DD_APM_ENABLED = os.getenv("AIP_DD_APM_ENABLED", "false")
-    if AIP_DD_APM_ENABLED == "true":
-        import ddtrace.auto  # noqa: F401
+    if os.getenv("AIP_DD_APM_ENABLED", "false") == "true":
+        from ddtrace import config as ddtrace_config
 
-        tracer.configure(hostname=DD_AGENT_HOST, port=DD_AGENT_PORT, https=False)
-
-        # Set the custom APM name: https://ddtrace.readthedocs.io/en/stable/integrations.html#id74  # noqa: E501
         apm_svc_name = "v15-ns-zap-ash-aip-playground-dev"  # TODO: remove this hardcoded value
         ddtrace_config.fastapi["service_name"] = apm_svc_name
-        print(f"Enabled Datadog APM with service name: {apm_svc_name}")
-    print("Completed lifespan before yield")
+        sys.stderr.write(f"[STARTUP] Enabled Datadog APM with service name: {apm_svc_name}\n")
+
+    sys.stderr.write("[LIFESPAN] Completed lifespan before yield\n")
+    sys.stderr.flush()
     yield
 
 app = FastAPI(
