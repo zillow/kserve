@@ -153,6 +153,10 @@ class RESTServer:
         except ImportFromStringError as exc:
             logger.error("Error loading ASGI app. %s", exc)
             sys.exit(1)
+        
+        # AIP: Set model_registry in app.state so lifespan can access it in each worker.
+        app.state.model_registry = self.dataplane.model_registry
+        
         self._add_middlewares(app)
         self._register_endpoints(app)
         self._add_exception_handlers(app)

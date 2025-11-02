@@ -183,11 +183,25 @@ parser.add_argument(
 )
 args, _ = parser.parse_known_args()
 
+# AIP:
+# Lifespan function to call post_worker_init on models.
+# This runs in each worker process after the worker is spawned but before it handles requests.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    sys.stderr.write("[LIFESPAN] Entering lifespan\n")
-    # TODO Call the post_init method of the models.
-    sys.stderr.write("[LIFESPAN] Completed lifespan before yield\n")
+    sys.stderr.write("[LIFESPAN] Executing lifespan\n")
+    
+    # Call post_worker_init on models if they exist in app.state.
+    # The model_registry is set in app.state by RESTServer.create_application() in each worker.
+    model_registry = getattr(app.state, 'model_registry', None)
+    if model_registry:
+        for model_name, model in model_registry.get_models().items():
+            post_worker_init_func = getattr(model, "post_worker_init", None)
+            if post_worker_init_func is not None:
+                sys.stderr.write(f"[LIFESPAN] Calling post_worker_init on {model_name}\n")
+                sys.stderr.flush()
+                post_worker_init_func()
+    
+    sys.stderr.write("[LIFESPAN] Completed lifespan execution before yielding to the main loop\n")
     sys.stderr.flush()
     yield
 
