@@ -211,7 +211,7 @@ app = FastAPI(
     # so it can only use CLI args (default: False), not constructor parameters.
     # Passing enable_docs_url=True to ModelServer.__init__() has no effect.
     # Also, FastAPI requires docs_url to be set at the time of app creation here, not later.
-    docs_url="/docs"
+    docs_url="/docs",
     redoc_url=None,
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
