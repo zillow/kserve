@@ -188,8 +188,6 @@ args, _ = parser.parse_known_args()
 # This runs in each worker process after the worker is spawned but before it handles requests.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    sys.stderr.write("[LIFESPAN] Executing lifespan\n")
-    
     # Call post_worker_init on models if they exist in app.state.
     # The model_registry is set in app.state by RESTServer.create_application() in each worker.
     model_registry = getattr(app.state, 'model_registry', None)
@@ -201,7 +199,6 @@ async def lifespan(app: FastAPI):
                 sys.stderr.flush()
                 post_worker_init_func()
     
-    sys.stderr.write("[LIFESPAN] Completed lifespan execution before yielding to the main loop\n")
     sys.stderr.flush()
     yield
 
@@ -209,7 +206,12 @@ app = FastAPI(
     title="KServe ModelServer",
     # AIP: Get the 'zillow-kserve' distribution instead of 'kserve'.
     version=metadata.version("zillow-kserve"),
-    docs_url="/docs" if args.enable_docs_url else None,
+    # AIP: Always enable the docs URL. 
+    # This app is created at module import time, before ModelServer.__init__() runs,
+    # so it can only use CLI args (default: False), not constructor parameters.
+    # Passing enable_docs_url=True to ModelServer.__init__() has no effect.
+    # Also, FastAPI requires docs_url to be set at the time of app creation here, not later.
+    docs_url="/docs"
     redoc_url=None,
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
