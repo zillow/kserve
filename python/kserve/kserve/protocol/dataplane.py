@@ -342,11 +342,14 @@ class DataPlane:
             if has_binary_headers(headers):
                 # returns CloudEvent
                 body = self.get_binary_cloudevent(body, headers)
-            elif (
-                "content-type" in headers
-                and headers["content-type"] not in JSON_HEADERS
-            ):
-                return body, attributes
+        
+        # AIP change begins.
+        # Always attempt to decode bytes as JSON, regardless of content-type header.
+        # This handles cases where:
+        # - content-type is application/json (likely case when called from code)
+        # - curl is called with JSON body using -d flag but without explicit content-type header,
+        #   so curl defaults to application/x-www-form-urlencoded header
+        # - content-type header is missing but body is JSON
         if type(body) is bytes:
             # AIP: add Datadog trace for json.loads.
             try:
