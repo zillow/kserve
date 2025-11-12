@@ -30,7 +30,13 @@ mp.allow_connection_pickling()
 
 # AIP change: Use fork instead of spawn to create worker processes.
 # KServe switched from fork to spawn to address https://github.com/kserve/kserve/issues/3662.
-# However, in AIP, we use only 1 worker for GPU models, so we should be ok with fork.
+# The downside of using spawn is that every worker process will have the model in its own memory,
+# so the memory usage of kserve-container will increase linearly with the number of workers.
+# When workers are created using fork, the model will be loaded in the parent process and shared
+# with the worker processes, so the memory of kserve-container won't increase significantly as
+# more workers are added.
+# In AIP, we use multiple workers only for CPU models and use only 1 worker for GPU models.
+# So we should be ok continuing to use fork.
 fork = mp.get_context("fork")
 
 
