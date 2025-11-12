@@ -95,7 +95,9 @@ class RESTServer:
         root_router.add_api_route(r"/metrics", metrics_handler, methods=["GET"])
         app.include_router(root_router)
         register_v1_endpoints(app, self.dataplane, self.model_repository_extension)
-        register_v2_endpoints(app, self.dataplane, self.model_repository_extension)
+
+        # AIP: Removed the v2 endpoints as we don't support the v2 API.
+        
         # Register OpenAI endpoints if any of the models in the registry implement the OpenAI interface
         # This adds /openai/v1/completions and /openai/v1/chat/completions routes to the
         # REST server.
@@ -151,9 +153,26 @@ class RESTServer:
         except ImportFromStringError as exc:
             logger.error("Error loading ASGI app. %s", exc)
             sys.exit(1)
+        
         self._add_middlewares(app)
         self._register_endpoints(app)
         self._add_exception_handlers(app)
+        
+        # AIP change begins.
+        # This is done after KServe's configuration to ensure proper middleware ordering.
+        # Since middlewares execute in reverse order of addition, adding AIP middlewares last
+        # makes them inner layers, allowing KServe's timing and logging to wrap all requests.
+
+        # Set model_registry in app.state so lifespan can access it in each worker.
+        app.state.model_registry = self.dataplane.model_registry
+        
+        # Let AIP Serving SDK configure the app (e.g., add middleware) in each worker.
+        for model_name, model in self.dataplane.model_registry.get_models().items():
+            configure_worker_app_func = getattr(model, "configure_worker_app", None)
+            if configure_worker_app_func is not None:
+                logger.info(f"Calling configure_worker_app on {model_name}")
+                configure_worker_app_func(app)
+        # AIP change ends.
 
     async def start(self):
         """Starts the server without configuring the event loop."""

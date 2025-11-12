@@ -113,7 +113,7 @@ class InferenceServicer(grpc_predict_v2_pb2_grpc.GRPCInferenceServiceServicer):
         headers = to_headers(context)
         self.validate_grpc_request(request)
         infer_request = InferRequest.from_grpc(request)
-        response_body, _ = await self._data_plane.infer(
+        response_body, _, _ = await self._data_plane.infer(
             request=infer_request, headers=headers, model_name=request.model_name
         )
         if isinstance(response_body, pb.ModelInferResponse):

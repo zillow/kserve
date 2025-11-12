@@ -1,0 +1,60 @@
+# AIP file to enable building and publishing in the GitLab mirror of this GitHub fork.
+include:
+  - project: 'analytics/artificial-intelligence/ai-platform/aip-infrastructure/ci-templates/ci-cd-template'
+    ref: &include_ref 'v4'
+    file: 'environments/devex.yml'
+  - project: 'analytics/artificial-intelligence/ai-platform/aip-infrastructure/ci-templates/ci-cd-template'
+    ref: *include_ref
+    file: '/blocks/python.yml'
+
+variables:
+  PY_LIBRARY_NAME: "zillow-kserve"
+  MAJOR_VERSION: "0"
+  MINOR_VERSION: "15"
+  RELEASE_BRANCH: "zillow/release-0.15.2"
+  PUBLISH: "true"
+
+stages:
+  - build
+
+.version: &version |
+  # Extract the open source KServe version as the basis for our forked library version.
+  KSERVE_VERSION=$(cat python/VERSION)
+
+  PY_LIBRARY_VERSION="${MAJOR_VERSION}.${MINOR_VERSION}.${CI_PIPELINE_IID}"
+  if [ "${CI_COMMIT_BRANCH}" != "${RELEASE_BRANCH}" ]; then
+    PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}.dev${CI_PIPELINE_IID}"
+  fi
+  
+  # Suffix the KServe version to the python library version only, because Docker versions 
+  # do not have the concept of build metadata and the "+" character causes errors.
+  PY_LIBRARY_VERSION="${PY_LIBRARY_VERSION}+${KSERVE_VERSION}"
+
+build:publish:
+  extends: .aip_python_debian_image
+  stage: build
+  script:
+  - *version
+  # Only the files in the python/kserve directory are included in the PyPI package.
+  # Therefore, we need to change to the kserve directory before building the package with Poetry.
+  - cd python/kserve
+
+  # Update package name to match our fork using the PY_LIBRARY_NAME variable
+  - sed -i "s/name = \"kserve\"/name = \"${PY_LIBRARY_NAME}\"/" pyproject.toml
+  
+  # Update repository URL to point to the release branch of our fork
+  - sed -i "s|repository = \"https://github.com/kserve/kserve/tree/master/python/kserve\"|repository = \"https://github.com/zillow/kserve/tree/${RELEASE_BRANCH}/python/kserve\"|" pyproject.toml
+
+  # Set our custom version to the kserve package.
+  - poetry version "${PY_LIBRARY_VERSION}"
+
+  # Configure Poetry to use the internal repository.
+  # Similar to https://gitlab.zgtools.net/analytics/artificial-intelligence/ai-platform/aip-infrastructure/ci-templates/ci-cd-template/-/blob/main/blocks/python.yml?ref_type=heads#L62-66
+  - poetry config repositories.analytics-pypi $ANALYTICS_PYPI_REPOSITORY
+  - poetry build
+  - poetry publish --repository analytics-pypi --username $PYPI_USERNAME --password $PYPI_PASSWORD
+
+  rules:
+    - if: '$PUBLISH == "true"'
+    # only trigger on zillow/ branches
+    - if: '$CI_COMMIT_BRANCH =~ /^zillow.*/'

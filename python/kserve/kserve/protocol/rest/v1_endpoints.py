@@ -14,6 +14,9 @@
 
 from typing import Optional, Union, Dict, List, AsyncIterator
 
+import os
+from ddtrace import tracer
+
 from fastapi import Request, Response, FastAPI, APIRouter
 from starlette.responses import StreamingResponse
 from fastapi.responses import ORJSONResponse
@@ -81,7 +84,9 @@ class V1Endpoints:
         infer_request, req_attributes = self.dataplane.decode(
             body=body, headers=headers
         )
-        response, response_headers = await self.dataplane.infer(
+
+        # AIP: Extract the user defined status code to add to the response.
+        response, response_headers, status_code = await self.dataplane.infer(
             model_name=model_name, request=infer_request, headers=headers
         )
         response, res_headers = self.dataplane.encode(
@@ -97,7 +102,16 @@ class V1Endpoints:
             return Response(content=response, headers=response_headers)
         if isinstance(response, AsyncIterator):
             return StreamingResponse(content=response)
-        return ORJSONResponse(content=response, headers=response_headers)
+
+        # AIP changes:
+        # Add Datadog write span. 
+        # Also pass the status code to the response.
+        if os.getenv("AIP_DD_APM_ENABLED", "false") == "true":
+            with tracer.trace("write response"):
+                return ORJSONResponse(content=response, headers=response_headers, status_code=status_code)
+        else:
+            return ORJSONResponse(content=response, headers=response_headers, status_code=status_code)
+
 
     async def explain(self, model_name: str, request: Request) -> Union[Response, Dict]:
         """Explain handler.
@@ -165,10 +179,5 @@ def register_v1_endpoints(
         response_model=None,
         methods=["POST"],
     )
-    v1_router.add_api_route(
-        r"/models/{model_name}:explain",
-        v1_endpoints.explain,
-        response_model=None,
-        methods=["POST"],
-    )
+    # AIP: Removed the explain endpoint as we don't support it.
     app.include_router(v1_router)

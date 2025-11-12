@@ -143,7 +143,7 @@ class TestDataPlane:
     async def test_infer(self, dataplane_with_model):
         body = b'{"instances":[[1,2]]}'
         infer_request, req_attributes = dataplane_with_model.decode(body, None)
-        resp, headers = await dataplane_with_model.infer(self.MODEL_NAME, infer_request)
+        resp, headers, _ = await dataplane_with_model.infer(self.MODEL_NAME, infer_request)
         resp, headers = dataplane_with_model.encode(
             self.MODEL_NAME, resp, headers, req_attributes
         )
@@ -177,7 +177,7 @@ class TestDataPlaneCloudEvent:
         event: CloudEvent = dummy_cloud_event({"instances": [[1, 2]]})
         headers, body = to_structured(event)
         infer_request, req_attributes = dataplane_with_ce_model.decode(body, headers)
-        resp, response_headers = await dataplane_with_ce_model.infer(
+        resp, response_headers, _ = await dataplane_with_ce_model.infer(
             self.MODEL_NAME, infer_request, headers
         )
         resp, res_headers = dataplane_with_ce_model.encode(
@@ -209,7 +209,7 @@ class TestDataPlaneCloudEvent:
             infer_request, req_attributes = dataplane_with_ce_model.decode(
                 body, headers
             )
-            resp, response_headers = await dataplane_with_ce_model.infer(
+            resp, response_headers, _ = await dataplane_with_ce_model.infer(
                 self.MODEL_NAME, infer_request, headers
             )
             resp, res_headers = dataplane_with_ce_model.encode(
@@ -235,7 +235,7 @@ class TestDataPlaneCloudEvent:
             infer_request, req_attributes = dataplane_with_ce_model.decode(
                 body, headers
             )
-            resp, response_headers = await dataplane_with_ce_model.infer(
+            resp, response_headers, _ = await dataplane_with_ce_model.infer(
                 self.MODEL_NAME, infer_request, headers
             )
             resp, res_headers = dataplane_with_ce_model.encode(
@@ -265,7 +265,7 @@ class TestDataPlaneCloudEvent:
             infer_request, req_attributes = dataplane_with_ce_model.decode(
                 body, headers
             )
-            resp, response_headers = await dataplane_with_ce_model.infer(
+            resp, response_headers, _ = await dataplane_with_ce_model.infer(
                 self.MODEL_NAME, infer_request, headers
             )
             resp, res_headers = dataplane_with_ce_model.encode(
@@ -288,7 +288,7 @@ class TestDataPlaneCloudEvent:
         headers, body = to_binary(event)
 
         infer_request, req_attributes = dataplane_with_ce_model.decode(body, headers)
-        resp, response_headers = await dataplane_with_ce_model.infer(
+        resp, response_headers, _ = await dataplane_with_ce_model.infer(
             self.MODEL_NAME, infer_request, headers
         )
         resp, res_headers = dataplane_with_ce_model.encode(
@@ -309,7 +309,7 @@ class TestDataPlaneCloudEvent:
         headers, body = to_binary(event)
 
         infer_request, req_attributes = dataplane_with_ce_model.decode(body, headers)
-        resp, response_headers = await dataplane_with_ce_model.infer(
+        resp, response_headers, _ = await dataplane_with_ce_model.infer(
             self.MODEL_NAME, infer_request, headers
         )
         resp, res_headers = dataplane_with_ce_model.encode(
@@ -402,7 +402,7 @@ class TestDataPlaneAvroCloudEvent:
         headers, body = to_binary(event)
 
         infer_request, req_attributes = dataplane_with_ce_model.decode(body, headers)
-        resp, response_headers = await dataplane_with_ce_model.infer(
+        resp, response_headers, _ = await dataplane_with_ce_model.infer(
             self.MODEL_NAME, infer_request, headers
         )
 

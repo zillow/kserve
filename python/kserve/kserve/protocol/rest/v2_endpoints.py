@@ -165,7 +165,9 @@ class V2Endpoints:
             protocol_version=PredictorProtocol.REST_V2.value,
             model_name=model_name,
         )
-        response, response_headers = await self.dataplane.infer(
+
+        # AIP: ignore the extra values returned by the infer method.
+        response, response_headers, *_ = await self.dataplane.infer(
             model_name=model_name,
             request=infer_request,
             headers=request_headers,

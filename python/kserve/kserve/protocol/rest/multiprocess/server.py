@@ -27,7 +27,17 @@ from kserve.protocol.model_repository_extension import ModelRepositoryExtension
 from kserve.protocol.rest.server import RESTServer
 
 mp.allow_connection_pickling()
-spawn = mp.get_context("spawn")
+
+# AIP change: Use fork instead of spawn to create worker processes.
+# KServe switched from fork to spawn to address https://github.com/kserve/kserve/issues/3662.
+# The downside of using spawn is that every worker process will have the model in its own memory,
+# so the memory usage of kserve-container will increase linearly with the number of workers.
+# When workers are created using fork, the model will be loaded in the parent process and shared
+# with the worker processes, so the memory of kserve-container won't increase significantly as
+# more workers are added.
+# In AIP, we use multiple workers only for CPU models and use only 1 worker for GPU models.
+# So we should be ok continuing to use fork.
+fork = mp.get_context("fork")
 
 
 class RESTServerProcess:
@@ -42,7 +52,7 @@ class RESTServerProcess:
         # A ping request is sent from the parent_conn and is received by the child_conn which in turn responds with a pong.
         # If the request times out, then the process is considered unresponsive. We then kill the process and recreate it.
         self._parent_conn, self._child_conn = mp.Pipe()
-        self._process = spawn.Process(target=self.target, args=[sockets])
+        self._process = fork.Process(target=self.target, args=[sockets])
         self._log_config_file = log_config_file
 
     def ping(self, timeout: float = 5) -> bool:

@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from http import HTTPStatus
+import os
+from ddtrace import tracer
+
 import time
 from importlib import metadata
 from inspect import iscoroutinefunction
@@ -57,7 +61,8 @@ class DataPlane:
 
         # Dynamically fetching version of the installed 'kserve' distribution. The assumption is
         # that 'kserve' will already be installed by the time this class is instantiated.
-        self._server_version = metadata.version("kserve")
+        # AIP: Get the 'zillow-kserve' distribution instead of 'kserve'.
+        self._server_version = metadata.version("zillow-kserve")
         self.predictor_config = predictor_config
         self._inference_grpc_client = None
         self._inference_rest_client = None
@@ -337,14 +342,23 @@ class DataPlane:
             if has_binary_headers(headers):
                 # returns CloudEvent
                 body = self.get_binary_cloudevent(body, headers)
-            elif (
-                "content-type" in headers
-                and headers["content-type"] not in JSON_HEADERS
-            ):
-                return body, attributes
+        
+        # AIP change begins.
+        # Always attempt to decode bytes as JSON, regardless of content-type header.
+        # This handles cases where:
+        # - content-type is application/json (likely case when called from code)
+        # - curl is called with JSON body using -d flag but without explicit content-type header,
+        #   so curl defaults to application/x-www-form-urlencoded header
+        # - content-type header is missing but body is JSON
         if type(body) is bytes:
+            # AIP: add Datadog trace for json.loads.
             try:
-                body = orjson.loads(body)
+                if os.getenv("AIP_DD_APM_ENABLED", "false") == "true":
+                    with tracer.trace("json.loads"):
+                        body = orjson.loads(body)
+                else:
+                    body = orjson.loads(body)
+                # AIP change ends.
             except orjson.JSONDecodeError as e:
                 raise InvalidInput(f"Unrecognized request format: {e}")
 
@@ -429,7 +443,7 @@ class DataPlane:
         model_name: str,
         request: Union[Dict, InferRequest],
         headers: Optional[Dict[str, str]] = None,
-    ) -> Tuple[Union[Dict, InferResponse], Dict[str, str]]:
+    ) -> Tuple[Union[Dict, InferResponse], Dict[str, str], HTTPStatus]:
         """Performs inference on the specified model with the provided body and headers.
 
         If the ``body`` contains an encoded `CloudEvent`_, then it will be decoded and processed.
@@ -441,9 +455,10 @@ class DataPlane:
             headers: (Optional[Dict[str, str]]): Request headers.
 
         Returns:
-            Tuple[Union[str, bytes, Dict], Dict[str, str]]:
+            Tuple[Union[str, bytes, Dict], Dict[str, str], HTTPStatus]:
                 - response: The inference result.
                 - response_headers: Headers to construct the HTTP response.
+                - status_code: HTTP status code for the response.
 
         Raises:
             InvalidInput: An error when the body bytes can't be decoded as JSON.
@@ -460,7 +475,14 @@ class DataPlane:
         model = cast(InferenceModel, model)
         response, res_headers = await model(request, headers=headers)
         response_headers.update(res_headers)
-        return response, response_headers
+
+        # AIP:
+        # Extract "body" from the response and send it as the response.
+        # Return the user specified status code as the status code.
+        body = response.get("body")
+        status_code = response.get("status_code", HTTPStatus.OK)
+        
+        return body, response_headers, status_code
 
     async def explain(
         self,
